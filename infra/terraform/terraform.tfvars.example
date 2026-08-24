@@ -1,10 +1,19 @@
 subscription_id = "00000000-0000-0000-0000-000000000000"
-location        = "brazilsouth"
 environment     = "dev"
-service_bus_sku = "Standard"
+control_plane_location = "brazilsouth"
+
+cells = {
+  brs-01 = {
+    location        = "brazilsouth"
+    service_bus_sku = "Standard"
+  }
+  eus-01 = {
+    location        = "eastus2"
+    service_bus_sku = "Standard"
+  }
+}
 
 tags = {
   owner       = "raphael-reis"
   cost-center = "learning"
 }
-

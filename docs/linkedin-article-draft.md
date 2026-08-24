@@ -33,6 +33,24 @@ O fluxo inicial será:
 5. Spring AI usa essas informações para produzir uma recomendação estruturada;
 6. um operador humano aprova ou rejeita a mudança.
 
+## Por que uma arquitetura celular
+
+Uma única instância global do sistema seria mais simples, mas também concentraria o risco. Uma implantação defeituosa, um consumidor travado ou uma frota produzindo volume anormal poderia afetar todas as operações.
+
+Por isso, a arquitetura será dividida em células. No Azure esse desenho corresponde ao padrão Deployment Stamps: cópias independentes e repetíveis do workload, cada uma atendendo um subconjunto de clientes ou frotas.
+
+Cada célula possui compute, namespace do Service Bus, dados operacionais, identidade e limites próprios. O control plane conhece o mapeamento `fleetId -> cellId`, mas não participa do processamento de uma rota.
+
+Essa separação produz três propriedades importantes:
+
+1. uma falha fica contida na célula afetada;
+2. a capacidade cresce com a criação de novas células;
+3. atualizações podem avançar gradualmente, começando por uma célula canário.
+
+O custo é real: infraestrutura duplicada, roteamento adicional e observabilidade agregada. Arquitetura celular não é uma otimização gratuita; é uma escolha deliberada para reduzir o raio de impacto.
+
+Fonte: [Microsoft — Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp).
+
 ## Por que Service Bus
 
 O Service Bus oferece filas, tópicos, assinaturas, sessões, detecção de duplicidade e DLQ. Entretanto, isso não transforma automaticamente o consumidor em “exactly once”. No modo `PeekLock`, uma mensagem pode ser entregue novamente se o processamento terminar antes da confirmação.
@@ -46,4 +64,3 @@ Fonte: [Microsoft — evitar perda e duplicação de mensagens](https://learn.mi
 Não quero que a infraestrutura seja uma lista de cliques no portal. Namespace, tópico, assinatura, fila, observabilidade e identidades serão definidos com Terraform e revisados no mesmo fluxo do código Java.
 
 <!-- Próxima seção: primeiro evento de domínio e teste de detecção de risco. -->
-

@@ -16,7 +16,8 @@ public class LoggingRouteRiskEventPublisher implements RouteRiskEventPublisher {
     @Override
     public void publish(RouteRiskAssessment assessment) {
         LOGGER.info(
-                "event=RouteRiskDetected freightId={} truckId={} severity={} reasons={}",
+                "event=RouteRiskDetected cellId={} freightId={} truckId={} severity={} reasons={}",
+                assessment.cellId(),
                 assessment.freightId(),
                 assessment.truckId(),
                 assessment.severity(),

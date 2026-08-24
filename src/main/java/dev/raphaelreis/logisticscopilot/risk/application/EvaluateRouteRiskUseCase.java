@@ -2,6 +2,7 @@ package dev.raphaelreis.logisticscopilot.risk.application;
 
 import dev.raphaelreis.logisticscopilot.freight.domain.Freight;
 import dev.raphaelreis.logisticscopilot.risk.domain.RouteRiskAssessment;
+import dev.raphaelreis.logisticscopilot.shared.domain.CellId;
 import dev.raphaelreis.logisticscopilot.telemetry.domain.TelemetryReading;
 import org.springframework.stereotype.Service;
 
@@ -19,12 +20,11 @@ public class EvaluateRouteRiskUseCase {
         this.eventPublisher = eventPublisher;
     }
 
-    public RouteRiskAssessment evaluate(Freight freight, TelemetryReading telemetry) {
-        var assessment = detector.assess(freight, telemetry);
+    public RouteRiskAssessment evaluate(CellId cellId, Freight freight, TelemetryReading telemetry) {
+        var assessment = detector.assess(cellId, freight, telemetry);
         if (assessment.atRisk()) {
             eventPublisher.publish(assessment);
         }
         return assessment;
     }
 }
-

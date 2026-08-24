@@ -4,6 +4,7 @@ import dev.raphaelreis.logisticscopilot.freight.domain.Freight;
 import dev.raphaelreis.logisticscopilot.freight.domain.FreightPriority;
 import dev.raphaelreis.logisticscopilot.freight.domain.FreightStatus;
 import dev.raphaelreis.logisticscopilot.risk.domain.RouteRiskAssessment;
+import dev.raphaelreis.logisticscopilot.shared.domain.CellId;
 import dev.raphaelreis.logisticscopilot.shared.domain.GeoPoint;
 import dev.raphaelreis.logisticscopilot.telemetry.domain.TelemetryReading;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,13 @@ class EvaluateRouteRiskUseCaseTest {
         var useCase = new EvaluateRouteRiskUseCase(new RouteRiskDetector(), published::add);
         var truckId = UUID.randomUUID();
         var freight = freightAssignedTo(truckId);
+        var cellId = new CellId("brs-01");
 
-        useCase.evaluate(freight, telemetry(truckId, 80, 4.0, 0));
-        useCase.evaluate(freight, telemetry(truckId, 8, 7.5, 45));
+        useCase.evaluate(cellId, freight, telemetry(truckId, 80, 4.0, 0));
+        useCase.evaluate(cellId, freight, telemetry(truckId, 8, 7.5, 45));
 
         assertThat(published).hasSize(1);
+        assertThat(published.getFirst().cellId()).isEqualTo(cellId);
         assertThat(published.getFirst().atRisk()).isTrue();
     }
 

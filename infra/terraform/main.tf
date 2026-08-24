@@ -4,78 +4,32 @@ resource "random_string" "suffix" {
   special = false
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "rg-${local.prefix}"
-  location = var.location
+resource "azurerm_resource_group" "shared" {
+  name     = "rg-${local.prefix}-shared"
+  location = var.control_plane_location
   tags     = local.tags
 }
 
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "log-${local.prefix}-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+resource "azurerm_log_analytics_workspace" "shared" {
+  name                = "log-${local.prefix}-shared-${random_string.suffix.result}"
+  location            = azurerm_resource_group.shared.location
+  resource_group_name = azurerm_resource_group.shared.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
   tags                = local.tags
 }
 
-resource "azurerm_servicebus_namespace" "main" {
-  name                = "sb-${local.prefix}-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = var.service_bus_sku
-  local_auth_enabled  = false
-  minimum_tls_version = "1.2"
-  tags                = local.tags
+module "cell" {
+  source = "./modules/cell"
 
-  identity {
-    type = "SystemAssigned"
-  }
+  for_each = var.cells
+
+  cell_id                    = each.key
+  environment                = var.environment
+  location                   = each.value.location
+  service_bus_sku            = each.value.service_bus_sku
+  workload                   = local.workload
+  name_suffix                = random_string.suffix.result
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.shared.id
+  tags                       = local.tags
 }
-
-resource "azurerm_servicebus_topic" "logistics_events" {
-  name                                    = "logistics-events"
-  namespace_id                            = azurerm_servicebus_namespace.main.id
-  default_message_ttl                     = "P1D"
-  requires_duplicate_detection            = true
-  duplicate_detection_history_time_window = "PT10M"
-  support_ordering                        = true
-  partitioning_enabled                    = var.service_bus_sku == "Standard"
-}
-
-resource "azurerm_servicebus_subscription" "route_planning" {
-  name                                      = "route-planning"
-  topic_id                                  = azurerm_servicebus_topic.logistics_events.id
-  max_delivery_count                        = 5
-  lock_duration                             = "PT1M"
-  default_message_ttl                       = "P1D"
-  dead_lettering_on_message_expiration      = true
-  dead_lettering_on_filter_evaluation_error = true
-}
-
-resource "azurerm_servicebus_queue" "route_replanning_commands" {
-  name                                    = "route-replanning-commands"
-  namespace_id                            = azurerm_servicebus_namespace.main.id
-  default_message_ttl                     = "PT1H"
-  lock_duration                           = "PT1M"
-  max_delivery_count                      = 5
-  dead_lettering_on_message_expiration    = true
-  requires_duplicate_detection            = true
-  duplicate_detection_history_time_window = "PT10M"
-  partitioning_enabled                    = var.service_bus_sku == "Standard"
-}
-
-resource "azurerm_monitor_diagnostic_setting" "service_bus" {
-  name                       = "service-bus-diagnostics"
-  target_resource_id         = azurerm_servicebus_namespace.main.id
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-
-  enabled_log {
-    category_group = "allLogs"
-  }
-
-  enabled_metric {
-    category = "AllMetrics"
-  }
-}
-

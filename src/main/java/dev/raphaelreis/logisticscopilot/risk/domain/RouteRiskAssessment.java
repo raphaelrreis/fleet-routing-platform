@@ -1,11 +1,14 @@
 package dev.raphaelreis.logisticscopilot.risk.domain;
 
+import dev.raphaelreis.logisticscopilot.shared.domain.CellId;
+
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 public record RouteRiskAssessment(
+        CellId cellId,
         UUID freightId,
         UUID truckId,
         Instant assessedAt,
@@ -14,6 +17,7 @@ public record RouteRiskAssessment(
 ) {
 
     public RouteRiskAssessment {
+        Objects.requireNonNull(cellId, "cellId must not be null");
         Objects.requireNonNull(freightId, "freightId must not be null");
         Objects.requireNonNull(truckId, "truckId must not be null");
         Objects.requireNonNull(assessedAt, "assessedAt must not be null");
@@ -32,4 +36,3 @@ public record RouteRiskAssessment(
         return severity != RiskSeverity.NONE;
     }
 }
-

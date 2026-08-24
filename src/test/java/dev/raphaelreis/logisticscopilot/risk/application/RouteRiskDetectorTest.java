@@ -5,6 +5,7 @@ import dev.raphaelreis.logisticscopilot.freight.domain.FreightPriority;
 import dev.raphaelreis.logisticscopilot.freight.domain.FreightStatus;
 import dev.raphaelreis.logisticscopilot.risk.domain.RiskReason;
 import dev.raphaelreis.logisticscopilot.risk.domain.RiskSeverity;
+import dev.raphaelreis.logisticscopilot.shared.domain.CellId;
 import dev.raphaelreis.logisticscopilot.shared.domain.GeoPoint;
 import dev.raphaelreis.logisticscopilot.telemetry.domain.TelemetryReading;
 import org.junit.jupiter.api.Test;
@@ -18,12 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RouteRiskDetectorTest {
 
     private final RouteRiskDetector detector = new RouteRiskDetector();
+    private final CellId cellId = new CellId("brs-01");
     private final UUID truckId = UUID.randomUUID();
     private final UUID freightId = UUID.randomUUID();
 
     @Test
     void classifiesTemperatureViolationOnCriticalFreightAsCritical() {
-        var assessment = detector.assess(criticalRefrigeratedFreight(), telemetry(9, 8.4, 25, 65));
+        var assessment = detector.assess(cellId, criticalRefrigeratedFreight(), telemetry(9, 8.4, 25, 65));
 
         assertThat(assessment.severity()).isEqualTo(RiskSeverity.CRITICAL);
         assertThat(assessment.reasons()).contains(
@@ -35,7 +37,7 @@ class RouteRiskDetectorTest {
 
     @Test
     void returnsNoRiskForHealthyTelemetry() {
-        var assessment = detector.assess(criticalRefrigeratedFreight(), telemetry(70, 3.5, 0, 72));
+        var assessment = detector.assess(cellId, criticalRefrigeratedFreight(), telemetry(70, 3.5, 0, 72));
 
         assertThat(assessment.severity()).isEqualTo(RiskSeverity.NONE);
         assertThat(assessment.reasons()).isEmpty();
@@ -74,4 +76,3 @@ class RouteRiskDetectorTest {
         );
     }
 }
-

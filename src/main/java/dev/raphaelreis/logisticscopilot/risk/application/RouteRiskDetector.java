@@ -5,6 +5,7 @@ import dev.raphaelreis.logisticscopilot.freight.domain.FreightPriority;
 import dev.raphaelreis.logisticscopilot.risk.domain.RiskReason;
 import dev.raphaelreis.logisticscopilot.risk.domain.RiskSeverity;
 import dev.raphaelreis.logisticscopilot.risk.domain.RouteRiskAssessment;
+import dev.raphaelreis.logisticscopilot.shared.domain.CellId;
 import dev.raphaelreis.logisticscopilot.telemetry.domain.TelemetryReading;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,8 @@ public class RouteRiskDetector {
     private static final double LOW_FUEL_THRESHOLD = 15.0;
     private static final double STOPPED_SPEED_THRESHOLD_KPH = 5.0;
 
-    public RouteRiskAssessment assess(Freight freight, TelemetryReading telemetry) {
+    public RouteRiskAssessment assess(CellId cellId, Freight freight, TelemetryReading telemetry) {
+        Objects.requireNonNull(cellId, "cellId must not be null");
         Objects.requireNonNull(freight, "freight must not be null");
         Objects.requireNonNull(telemetry, "telemetry must not be null");
 
@@ -40,6 +42,7 @@ public class RouteRiskDetector {
         }
 
         return new RouteRiskAssessment(
+                cellId,
                 freight.id(),
                 telemetry.truckId(),
                 telemetry.recordedAt(),
@@ -88,4 +91,3 @@ public class RouteRiskDetector {
         return RiskSeverity.LOW;
     }
 }
-

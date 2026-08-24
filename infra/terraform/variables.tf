@@ -3,8 +3,8 @@ variable "subscription_id" {
   type        = string
 }
 
-variable "location" {
-  description = "Primary Azure region."
+variable "control_plane_location" {
+  description = "Azure region for shared control-plane observability resources."
   type        = string
   default     = "brazilsouth"
 }
@@ -20,14 +20,34 @@ variable "environment" {
   }
 }
 
-variable "service_bus_sku" {
-  description = "Service Bus tier. Standard for development; Premium is recommended for isolated production capacity."
-  type        = string
-  default     = "Standard"
+variable "cells" {
+  description = "Independent deployment stamps. Each map key is the stable cell identifier."
+  type = map(object({
+    location        = string
+    service_bus_sku = string
+  }))
+
+  default = {
+    brs-01 = {
+      location        = "brazilsouth"
+      service_bus_sku = "Standard"
+    }
+    eus-01 = {
+      location        = "eastus2"
+      service_bus_sku = "Standard"
+    }
+  }
 
   validation {
-    condition     = contains(["Standard", "Premium"], var.service_bus_sku)
-    error_message = "service_bus_sku must be Standard or Premium."
+    condition     = length(var.cells) >= 2
+    error_message = "Cell-based deployments require at least two cells to prevent single-cell assumptions."
+  }
+
+  validation {
+    condition = alltrue([
+      for cell in values(var.cells) : contains(["Standard", "Premium"], cell.service_bus_sku)
+    ])
+    error_message = "Every cell service_bus_sku must be Standard or Premium."
   }
 }
 
@@ -36,4 +56,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-

@@ -1,14 +1,15 @@
 # Terraform — Azure baseline
 
-Este diretório provisiona o primeiro recorte de infraestrutura:
+Este diretório provisiona o primeiro recorte de infraestrutura celular:
 
-- Resource Group;
-- Log Analytics Workspace;
-- Azure Service Bus Namespace sem autenticação local;
-- tópico `logistics-events`;
-- assinatura `route-planning` com DLQ;
-- fila `route-replanning-commands`;
-- diagnostic settings do Service Bus.
+- resource group e Log Analytics compartilhados apenas para observabilidade agregada;
+- duas células independentes por padrão (`brs-01` e `eus-01`);
+- resource group e Azure Service Bus Namespace próprios por célula;
+- tópico `logistics-events`, assinatura `route-planning` e DLQ por célula;
+- fila `route-replanning-commands` por célula;
+- diagnostic settings e tags com `cell-id`.
+
+O módulo `modules/cell` é a unidade de repetição. Novas células são adicionadas ao mapa `cells`, mantendo a mesma topologia e os mesmos controles.
 
 ## Validar localmente
 
@@ -35,5 +36,5 @@ O `terraform.tfvars` real não deve ser versionado. O pipeline e o backend remot
 - Standard no ambiente de desenvolvimento, pois tópicos não existem no Basic.
 - `local_auth_enabled = false`: aplicações devem usar Entra ID/Managed Identity.
 - Detecção de duplicidade não substitui idempotência no consumidor.
+- Duas células são obrigatórias para detectar pressupostos de instância única ainda no desenvolvimento.
 - O módulo Azure Verified para Service Bus ainda está em major version zero; este primeiro recorte usa recursos explícitos para deixar o aprendizado e o plano mais transparentes.
-
