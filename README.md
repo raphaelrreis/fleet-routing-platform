@@ -17,6 +17,22 @@ O objetivo é construir, em pequenas entregas, um copiloto operacional que inter
 
 ## Executar
 
+### Toolchain suportada
+
+- Java 25 LTS (`25.0.4-tem` no SDKMAN)
+- Maven 3.9.16
+- Spring Boot 4.1.1
+- Spring Framework 7.0.9, gerenciado pelo Spring Boot
+- Spring AI 2.0.1
+
+Ative as versões fixadas pelo projeto:
+
+```bash
+sdk env
+```
+
+O Maven Enforcer interrompe o build quando ele é executado fora da família Java 25 ou com Maven anterior ao 3.9.16.
+
 ```bash
 mvn spring-boot:run
 ```
