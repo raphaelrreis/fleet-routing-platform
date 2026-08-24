@@ -11,6 +11,8 @@ Este diretório provisiona o primeiro recorte de infraestrutura celular:
 
 O módulo `modules/cell` é a unidade de repetição. Novas células são adicionadas ao mapa `cells`, mantendo a mesma topologia e os mesmos controles.
 
+Toolchain validada: Terraform 1.15.8 ou patch posterior da linha 1.15.
+
 ## Validar localmente
 
 ```bash
