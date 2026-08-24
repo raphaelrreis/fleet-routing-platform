@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: logistics-copilot
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
