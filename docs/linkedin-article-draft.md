@@ -1,0 +1,49 @@
+# Spring Boot + IA no Azure: um copiloto logístico para replanejar rotas com telemetria
+
+> Draft em evolução. Cada seção só será considerada pronta quando o comportamento correspondente existir no repositório e estiver coberto por teste.
+
+## Introdução
+
+Um caminhão refrigerado está a caminho de uma entrega urgente. A temperatura da carga começa a subir, o combustível está abaixo do esperado e o trânsito indica que o prazo não será cumprido.
+
+Qual caminhão deveria assumir o frete? Qual rota respeita as dimensões do veículo e as restrições da carga? E como explicar essa recomendação ao operador sem entregar uma decisão crítica a um modelo generativo?
+
+Esse é o problema que escolhi para explorar Spring Boot, Spring AI e Azure de uma forma menos previsível que o tradicional chatbot.
+
+A proposta não é pedir para um LLM “inventar a melhor rota”. O modelo atuará como copiloto: interpretará o incidente, consultará ferramentas tipadas e explicará uma alternativa produzida por componentes determinísticos.
+
+## A primeira decisão: separar telemetria de workflow
+
+Nem toda mensagem é igual.
+
+Localização, velocidade e temperatura podem produzir milhares de sinais contínuos. Já eventos como `RouteRiskDetected` e `RouteProposed` representam mudanças importantes no processo de negócio e precisam de entrega confiável, retentativa e dead-letter queue.
+
+Por isso, o projeto usa Azure Service Bus como backbone dos workflows. A ingestão massiva de telemetria será evoluída depois com IoT Hub/Event Hubs.
+
+## A arquitetura inicial
+
+<!-- Inserir diagrama depois que os primeiros adaptadores estiverem implementados. -->
+
+O fluxo inicial será:
+
+1. uma API Spring Boot recebe telemetria simulada;
+2. regras determinísticas identificam risco para a entrega;
+3. um evento `RouteRiskDetected` é publicado no Service Bus;
+4. o worker consulta frota, restrições do frete e motor de rotas;
+5. Spring AI usa essas informações para produzir uma recomendação estruturada;
+6. um operador humano aprova ou rejeita a mudança.
+
+## Por que Service Bus
+
+O Service Bus oferece filas, tópicos, assinaturas, sessões, detecção de duplicidade e DLQ. Entretanto, isso não transforma automaticamente o consumidor em “exactly once”. No modo `PeekLock`, uma mensagem pode ser entregue novamente se o processamento terminar antes da confirmação.
+
+Por esse motivo, o desenho combina `MessageId` de negócio, detecção de duplicidade no broker e consumidores idempotentes.
+
+Fonte: [Microsoft — evitar perda e duplicação de mensagens](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates).
+
+## Infraestrutura também é parte do artigo
+
+Não quero que a infraestrutura seja uma lista de cliques no portal. Namespace, tópico, assinatura, fila, observabilidade e identidades serão definidos com Terraform e revisados no mesmo fluxo do código Java.
+
+<!-- Próxima seção: primeiro evento de domínio e teste de detecção de risco. -->
+

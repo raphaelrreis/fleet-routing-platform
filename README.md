@@ -7,6 +7,7 @@ O objetivo é construir, em pequenas entregas, um copiloto operacional que inter
 ## Estado atual
 
 - [x] Bootstrap do projeto
+- [x] Decisões de arquitetura e baseline Terraform do Service Bus
 - [ ] Domínio de frota, frete e telemetria
 - [ ] Detecção de risco de rota
 - [ ] Orquestração assíncrona
@@ -26,3 +27,9 @@ Health check:
 curl http://localhost:8080/actuator/health
 ```
 
+## Documentação
+
+- [Arquitetura](docs/architecture.md)
+- [ADRs](docs/adr)
+- [Draft do artigo para LinkedIn](docs/linkedin-article-draft.md)
+- [Infraestrutura Terraform](infra/terraform)
