@@ -8,8 +8,8 @@ O objetivo é construir, em pequenas entregas, um copiloto operacional que inter
 
 - [x] Bootstrap do projeto
 - [x] Decisões de arquitetura e baseline Terraform do Service Bus
-- [ ] Domínio de frota, frete e telemetria
-- [ ] Detecção de risco de rota
+- [x] Domínio de frota, frete e telemetria
+- [x] Detecção de risco de rota
 - [ ] Orquestração assíncrona
 - [ ] Integração com Azure Maps
 - [ ] Integração com Spring AI e Azure OpenAI
