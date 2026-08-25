@@ -1,66 +1,87 @@
-# Spring Boot and AI on Azure: Building a Telemetry-Driven Fleet Routing Platform
+# Spring Boot, AI, and Azure: From Fleet Telemetry to an Actionable Incident Recommendation
 
-> Work in progress. A section is considered complete only after the corresponding behavior exists in the repository and is covered by automated tests.
+[Português (Brasil)](linkedin-article-draft.pt-BR.md)
 
-## Introduction
+> Draft. Every behavior described here is tied to executable code and automated tests in the repository.
 
-A refrigerated truck is carrying a time-sensitive shipment. The cargo temperature begins to rise, fuel is below the expected level, and traffic data indicates that the delivery window will be missed.
+A refrigerated shipment is already on the road when its cargo temperature rises above the agreed limit. Fuel is low and the latest telemetry indicates a 35-minute delay.
 
-Which truck should take over the shipment? Which route respects the vehicle dimensions and cargo restrictions? How can the platform explain its recommendation without delegating a critical decision to a generative model?
+The useful question is not “Can an LLM calculate a route?” It should not. Distance, ETA, vehicle restrictions, and safety constraints belong to deterministic services that can be tested and audited.
 
-This is the problem I chose to explore with Spring Boot, Spring AI, and Azure instead of building another generic chatbot.
+The question I wanted this MVP to answer was more operational: once the platform has verified that a route is at risk, can AI turn those facts into a clear incident recommendation without inventing data?
 
-The goal is not to ask an LLM to "invent the best route." The model interprets the incident, invokes typed tools, and explains an alternative calculated by deterministic components.
+That became the project’s main feature: **AI-assisted incident recommendation**.
 
-## The first decision: separate telemetry from workflow messaging
+## The feature, end to end
 
-Not every message has the same operational requirements.
+The implemented flow is deliberately explicit:
 
-Location, speed, and temperature can generate thousands of continuous signals. Events such as `RouteRiskDetected` and `RouteProposed`, however, represent meaningful business state changes that require reliable delivery, retries, and a dead-letter queue.
+1. Deterministic rules evaluate canonical telemetry and detect route risk.
+2. The command transaction stores the risk assessment and a transactional outbox event atomically in PostgreSQL.
+3. An asynchronous worker claims `RouteRiskDetected` from the outbox.
+4. Spring AI sends the verified assessment facts to Azure OpenAI.
+5. The model must return a typed `RouteRecommendation`: `recommendation`, `rationale`, and `requiredActions`.
+6. The CQRS query endpoint exposes the assessment, the reasons that triggered it, and the recommendation status.
 
-For that reason, Azure Service Bus is the workflow messaging backbone. A later phase will introduce IoT Hub and Event Hubs for high-volume telemetry ingestion.
+If the AI call fails, the assessment is not lost. The outbox worker retries with exponential backoff and moves an exhausted event to a dead-letter state. The query side continues to show what happened instead of hiding the failure behind a timeout.
 
-## Initial architecture
+This boundary matters. AI interprets the incident and explains the next operational steps. It does not calculate routes, ETAs, distances, or safety constraints. Azure Maps and deterministic domain services will own those calculations.
 
-<!-- Add the architecture diagram after the first Azure adapters are implemented. -->
+## Why CQRS and a transactional outbox
 
-The initial flow is:
+Telemetry arrives quickly, while an AI response depends on a remote service with different latency and availability characteristics. Holding the HTTP transaction open across both concerns would couple ingestion to the model.
 
-1. A Spring Boot API receives simulated telemetry.
-2. Deterministic rules identify shipment risk.
-3. The application publishes a `RouteRiskDetected` event to Service Bus.
-4. A worker queries fleet availability, shipment constraints, and the route engine.
-5. Spring AI uses those facts to produce a structured recommendation.
-6. A human operator approves or rejects the proposed change.
+The command path therefore has a narrow responsibility: normalize the incoming payload, run the risk rules, and commit the assessment with its outbox event. Both writes succeed or neither does.
 
-## Why cell-based architecture
+The asynchronous path generates the recommendation and updates the read model. Clients use a separate query endpoint to follow the status: `PENDING`, `COMPLETED`, or `FAILED`.
 
-A single global deployment would be simpler, but it would also concentrate risk. A defective release, a stalled consumer, or one fleet producing abnormal volume could affect every operation.
+This is CQRS at a practical scale. It is not two databases or a large framework. It is a clear separation between changing state and reading the operational view.
 
-The architecture is therefore divided into cells. On Azure, this design maps to the Deployment Stamps pattern: independent, repeatable workload copies that each serve a subset of customers or fleets.
+## Protecting the domain from telemetry formats
 
-Each cell owns its compute, Service Bus namespace, operational data, identity, and capacity limits. The control plane stores the `fleetId -> cellId` mapping but does not participate in route processing.
+The external telematics payload uses speed in meters per second, fuel as a ratio, and delay in seconds. The domain model uses kilometers per hour, percentage, and minutes.
 
-This separation creates three important properties:
+An anti-corruption layer performs that translation before the risk rules run. Vendor naming and units stop at the integration boundary, which keeps the domain stable when a telematics provider changes.
 
-1. A failure remains contained within the affected cell.
-2. Capacity grows by adding cells with known limits.
-3. Releases can progress gradually, starting with a canary cell.
+## Kafka and Service Bus solve different problems
 
-The tradeoff is real: duplicated infrastructure, additional routing, and aggregated observability. Cell-based architecture is not a free optimization. It is a deliberate decision to reduce blast radius.
+The platform uses the Kafka API for telemetry and domain-event streaming. Redpanda provides that contract locally; in Azure, Event Hubs exposes a Kafka-compatible endpoint.
 
-Source: [Microsoft Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp).
+Azure Service Bus remains the right fit for business commands and workflow coordination that need queues, sessions, explicit retries, and dead-letter queues. Treating both products as interchangeable would blur their operational strengths.
 
-## Why Service Bus
+Microsoft documents the Kafka compatibility of Event Hubs and the message settlement behavior of Service Bus, including the possibility of redelivery. Consumers still need idempotency; a broker setting alone does not provide an end-to-end exactly-once guarantee.
 
-Service Bus provides queues, topics, subscriptions, sessions, duplicate detection, and DLQs. These features do not automatically make a consumer "exactly once." In PeekLock mode, a message may be delivered again if processing finishes before the receiver settles it.
+Sources: [Event Hubs for Apache Kafka](https://learn.microsoft.com/en-us/azure/event-hubs/azure-event-hubs-kafka-overview) and [Service Bus message transfers, locks, and settlement](https://learn.microsoft.com/en-us/azure/service-bus-messaging/message-transfers-locks-settlement).
 
-The design therefore combines a business-derived `MessageId`, broker duplicate detection, and idempotent consumers.
+## A cell-based Azure target
 
-Source: [Microsoft guidance for preventing message loss and duplicate processing](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates).
+The target runtime is divided into independent cells based on Azure’s Deployment Stamps pattern. Each cell contains its Spring Boot workloads, messaging resources, operational data, identity, and capacity limits. A fleet is assigned to one cell.
 
-## Infrastructure is part of the product
+This limits the impact of a faulty release or an abnormal telemetry spike. It also permits progressive rollout: deploy to one cell, observe it, then continue. The cost is duplicated infrastructure and more deliberate routing and observability.
 
-Infrastructure should not be a sequence of manual portal clicks. Namespaces, topics, subscriptions, queues, observability, and identities are defined in Terraform and reviewed through the same workflow as the Java code.
+Source: [Azure Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp).
 
-<!-- Next section: the first domain event and route risk detection test. -->
+## The multicloud part is a migration boundary
+
+The client scenario starts with workloads in AWS and GCP and moves this capability to Azure. Terraform configures all three providers, but their roles are intentionally different:
+
+- AWS and GCP are source environments for inventory, coexistence, replication, and cutover checks.
+- Azure is the target runtime for every new platform component.
+
+ECS, EKS, Cloud Run, and GKE workloads move toward AKS or Azure Container Apps. SQS, SNS, and Pub/Sub workflows map to Service Bus. MSK, Kinesis, and streaming-oriented Pub/Sub flows map to Event Hubs. PostgreSQL workloads move from RDS or Cloud SQL to Azure Database for PostgreSQL Flexible Server.
+
+This is a transition, not a permanent active-active design. Once the Azure workload is stable and the cutover criteria are met, the source path is retired.
+
+Source: [Azure Migration and Modernization Center](https://azure.microsoft.com/en-us/products/azure-migrate/).
+
+## Running the MVP
+
+The repository uses Java 25 LTS, Spring Boot 4.1, Spring AI 2.0, PostgreSQL, Kafka, Docker, Kubernetes, and Terraform.
+
+Docker Compose starts PostgreSQL and Redpanda for local development. The application can run with a deterministic local recommendation adapter, so the full incident flow is testable without cloud credentials. Activating the `azure-ai` profile switches the recommendation port to Azure OpenAI. A Helm chart deploys the workload to AKS, and Terraform defines the repeatable Azure cell baseline.
+
+The project is small enough to understand in one sitting, but the difficult boundaries are real: atomic state changes, asynchronous work, retries, typed AI output, CQRS, an anti-corruption layer, and a cloud migration path.
+
+Repository: [github.com/raphaelrreis/fleet-routing-platform](https://github.com/raphaelrreis/fleet-routing-platform)
+
+The next increment connects Azure Maps, adds end-to-end resilience tests, and provisions the managed runtime services for the first Azure cell.
