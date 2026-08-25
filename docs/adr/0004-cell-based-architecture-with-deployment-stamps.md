@@ -15,7 +15,7 @@ Adotaremos uma arquitetura celular baseada no padrão Azure Deployment Stamps.
 
 Cada célula terá, no mínimo:
 
-- compute do Logistics Copilot e do Route Planning Worker;
+- compute do Fleet Routing Platform e do Route Planning Worker;
 - namespace próprio do Azure Service Bus;
 - tópicos, assinaturas, filas e DLQs próprios;
 - armazenamento operacional particionado pela célula;

@@ -1,5 +1,5 @@
 locals {
-  prefix = "lgc-${var.environment}-${var.cell_id}"
+  prefix = "frp-${var.environment}-${var.cell_id}"
   tags = merge(var.tags, {
     cell-id      = var.cell_id
     architecture = "cell-based"

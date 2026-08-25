@@ -1,4 +1,4 @@
-# Logistics Copilot
+# Fleet Routing Platform
 
 Projeto de referência para explorar Spring Boot, Spring AI e serviços Azure em um cenário de transporte e logística orientado a eventos.
 

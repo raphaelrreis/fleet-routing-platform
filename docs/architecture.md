@@ -1,4 +1,4 @@
-# Arquitetura do Logistics Copilot
+# Arquitetura do Fleet Routing Platform
 
 ## Objetivo
 
@@ -73,7 +73,7 @@ Route Planning Worker (Spring Boot)
 | `TelemetryReceived` | Telemetry API | Risk Detector | Registrar uma leitura normalizada |
 | `RouteRiskDetected` | Risk Detector | Route Planning Worker | Solicitar análise de risco |
 | `ReplanningRequested` | Route Planning Worker | Route Engine | Calcular alternativas determinísticas |
-| `RouteProposed` | Logistics Copilot | Operations API | Apresentar recomendação ao operador |
+| `RouteProposed` | Fleet Routing Platform | Operations API | Apresentar recomendação ao operador |
 | `RouteApproved` | Operations API | Dispatch Adapter | Autorizar mudança operacional |
 
 ## Service Bus

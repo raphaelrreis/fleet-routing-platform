@@ -1,6 +1,6 @@
 spring:
   application:
-    name: logistics-copilot
+    name: fleet-routing-platform
 
 management:
   endpoints:

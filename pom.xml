@@ -12,9 +12,9 @@
     </parent>
 
     <groupId>dev.raphaelreis</groupId>
-    <artifactId>logistics-copilot</artifactId>
+    <artifactId>fleet-routing-platform</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>logistics-copilot</name>
+    <name>fleet-routing-platform</name>
     <description>AI-assisted logistics and route replanning reference project</description>
 
     <properties>
