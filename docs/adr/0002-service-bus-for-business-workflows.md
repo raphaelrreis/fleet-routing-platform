@@ -1,25 +1,24 @@
-# ADR 0002 — Service Bus para workflows de negócio
+# ADR 0002 - Service Bus for Business Workflows
 
-- Status: aceito
-- Data: 2026-08-24
+- Status: Accepted
+- Date: 2026-08-24
 
-## Contexto
+## Context
 
-O sistema processará dois tipos diferentes de mensagem:
+The system processes two distinct message categories:
 
-1. comandos e eventos de negócio, que não podem ser perdidos;
-2. telemetria de alta frequência, em que throughput e retenção para análise são mais importantes.
+1. Business commands and workflow events that must not be lost.
+2. High-frequency telemetry where throughput and analytical retention are more important.
 
-## Decisão
+## Decision
 
-Azure Service Bus será usado para comandos e eventos de workflow. Usaremos tópicos quando houver múltiplos consumidores e filas para comandos destinados a um único tipo de consumidor.
+Azure Service Bus will carry business commands and workflow events. Topics support multiple independent consumers, while queues carry commands targeted at one consumer type.
 
-IoT Hub/Event Hubs será avaliado em uma etapa futura para ingestão massiva de telemetria. Não enviaremos toda leitura bruta de GPS para o Service Bus.
+A future phase will evaluate IoT Hub and Event Hubs for high-volume telemetry ingestion. Raw GPS readings will not be sent through Service Bus.
 
-## Consequências
+## Consequences
 
-- processamento em `PeekLock` e, portanto, *at least once*;
-- `MessageId` estável, detecção de duplicidade e consumidor idempotente;
-- DLQ tratada como fila operacional, com métricas e processo de reenvio;
-- separação explícita entre event streaming e mensageria empresarial.
-
+- PeekLock processing provides *at-least-once* delivery.
+- Stable `MessageId` values, broker duplicate detection, and idempotent consumers work together.
+- The DLQ is treated as an operational queue with metrics and a controlled replay process.
+- Event streaming and enterprise messaging remain explicitly separated.

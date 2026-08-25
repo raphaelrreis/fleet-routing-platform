@@ -1,22 +1,21 @@
-# ADR 0001 — Azure como única cloud
+# ADR 0001 - Azure as the Sole Cloud Provider
 
-- Status: aceito
-- Data: 2026-08-24
+- Status: Accepted
+- Date: 2026-08-24
 
-## Contexto
+## Context
 
-O projeto pretende demonstrar Spring Boot, AI Engineering e arquitetura distribuída em um cenário próximo de vagas corporativas que pedem experiência prática com Microsoft Azure.
+The project demonstrates Spring Boot, AI engineering, and distributed architecture in an enterprise scenario that requires practical Microsoft Azure experience.
 
-## Decisão
+## Decision
 
-Todos os recursos gerenciados de produção serão Azure. O provisionamento será feito exclusivamente por Terraform versionado no mesmo repositório.
+All managed production resources will run on Azure. Terraform versioned in this repository is the only supported provisioning mechanism.
 
-O desenvolvimento local pode usar adaptadores em memória e simuladores, mas eles devem implementar as mesmas portas usadas pelos adaptadores Azure.
+Local development may use in-memory adapters and simulators, but they must implement the same application ports as the Azure adapters.
 
-## Consequências
+## Consequences
 
-- reduzimos variações de configuração e identidade;
-- conseguimos demonstrar Managed Identity, RBAC e observabilidade de ponta a ponta;
-- aceitamos acoplamento operacional com Azure em troca de um exemplo mais coeso;
-- cada novo recurso Azure deve entrar primeiro no Terraform e na documentação.
-
+- Configuration and identity variations are reduced.
+- The project demonstrates Managed Identity, RBAC, and end-to-end observability.
+- The design accepts operational Azure coupling in exchange for a cohesive reference implementation.
+- Every new Azure resource must be introduced through Terraform and documented before use.

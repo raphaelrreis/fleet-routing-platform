@@ -1,19 +1,19 @@
-# Terraform — Azure baseline
+# Terraform Azure Baseline
 
-Este diretório provisiona o primeiro recorte de infraestrutura celular:
+This directory provisions the initial cell-based infrastructure baseline:
 
-- resource group e Log Analytics compartilhados apenas para observabilidade agregada;
-- duas células independentes por padrão (`brs-01` e `eus-01`);
-- resource group e Azure Service Bus Namespace próprios por célula;
-- tópico `logistics-events`, assinatura `route-planning` e DLQ por célula;
-- fila `route-replanning-commands` por célula;
-- diagnostic settings e tags com `cell-id`.
+- a shared resource group and Log Analytics workspace used only for aggregated observability;
+- two independent cells by default: `brs-01` and `eus-01`;
+- a dedicated resource group and Azure Service Bus namespace for each cell;
+- a `logistics-events` topic, `route-planning` subscription, and DLQ in each cell;
+- a `route-replanning-commands` queue in each cell;
+- diagnostic settings and `cell-id` tags.
 
-O módulo `modules/cell` é a unidade de repetição. Novas células são adicionadas ao mapa `cells`, mantendo a mesma topologia e os mesmos controles.
+The `modules/cell` module is the repeatable deployment unit. Add cells to the `cells` map to preserve the same topology and controls across every deployment stamp.
 
-Toolchain validada: Terraform 1.15.8 ou patch posterior da linha 1.15.
+Validated toolchain: Terraform 1.15.8 or a later patch release in the 1.15 line.
 
-## Validar localmente
+## Local validation
 
 ```bash
 terraform fmt -check -recursive
@@ -21,7 +21,7 @@ terraform init -backend=false
 terraform validate
 ```
 
-## Planejar uma implantação
+## Planning a deployment
 
 ```bash
 cp terraform.tfvars.example terraform.tfvars
@@ -30,13 +30,13 @@ terraform init
 terraform plan
 ```
 
-O `terraform.tfvars` real não deve ser versionado. O pipeline e o backend remoto de estado serão adicionados antes da primeira implantação compartilhada.
+Do not commit the real `terraform.tfvars` file. A remote state backend and deployment pipeline will be added before the first shared deployment.
 
-## Decisões
+## Decisions
 
-- Provider `azurerm` fixado para tornar o exemplo reproduzível.
-- Standard no ambiente de desenvolvimento, pois tópicos não existem no Basic.
-- `local_auth_enabled = false`: aplicações devem usar Entra ID/Managed Identity.
-- Detecção de duplicidade não substitui idempotência no consumidor.
-- Duas células são obrigatórias para detectar pressupostos de instância única ainda no desenvolvimento.
-- O módulo Azure Verified para Service Bus ainda está em major version zero; este primeiro recorte usa recursos explícitos para deixar o aprendizado e o plano mais transparentes.
+- The `azurerm` provider is pinned for reproducible plans.
+- Development uses the Standard tier because the Basic tier does not support topics.
+- `local_auth_enabled = false`: workloads must use Microsoft Entra ID and Managed Identity.
+- Broker duplicate detection does not replace consumer idempotency.
+- At least two cells are required to expose single-instance assumptions during development.
+- The Azure Verified Service Bus module is still on a zero-major release. This baseline uses explicit resources to keep the learning path and execution plan transparent.

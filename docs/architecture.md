@@ -1,23 +1,23 @@
-# Arquitetura do Fleet Routing Platform
+# Fleet Routing Platform Architecture
 
-## Objetivo
+## Objective
 
-Construir um copiloto operacional para transporte rodoviário capaz de receber sinais de telemetria, identificar risco de uma entrega e propor um replanejamento explicável. A decisão geográfica será calculada por um motor determinístico; o LLM será usado para orquestrar ferramentas e explicar a recomendação.
+Build a road transportation decision-support platform that ingests telemetry, identifies shipment risk, and proposes explainable route changes. A deterministic routing engine calculates geographic decisions; the LLM orchestrates tools and explains the resulting recommendation.
 
-## Princípios
+## Principles
 
-1. **Azure-only:** todos os serviços gerenciados de produção pertencem ao ecossistema Azure.
-2. **Infrastructure as Code:** nenhum recurso permanente será criado manualmente no portal; Terraform é a fonte de verdade.
-3. **Mensageria confiável:** Azure Service Bus transporta comandos e eventos de workflow.
-4. **Telemetria não é comando:** sinais de alta frequência serão encaminhados por IoT Hub/Event Hubs em uma etapa posterior.
-5. **LLM não calcula rotas:** Azure Maps e um solver determinístico calculam custo, restrições e rota.
-6. **Human in the loop:** uma recomendação de alteração operacional exige aprovação humana no MVP.
-7. **Passwordless first:** workloads de produção usarão Managed Identity e RBAC.
-8. **Cell-based:** cada célula Azure atende um conjunto limitado de frotas e falha de forma independente.
+1. **Azure only:** all managed production services belong to the Azure ecosystem.
+2. **Infrastructure as Code:** no permanent resource is created manually in the portal; Terraform is the source of truth.
+3. **Reliable messaging:** Azure Service Bus carries business commands and workflow events.
+4. **Telemetry is not a command:** a later phase routes high-frequency signals through IoT Hub and Event Hubs.
+5. **The LLM does not calculate routes:** Azure Maps and a deterministic solver calculate cost, constraints, and route geometry.
+6. **Human in the loop:** the MVP requires human approval before an operational route change.
+7. **Passwordless first:** production workloads use Managed Identity and RBAC.
+8. **Cell based:** each Azure cell serves a bounded fleet set and fails independently.
 
-## Topologia celular
+## Cell topology
 
-O termo *célula* é usado como sinônimo de *deployment stamp*: uma unidade completa, repetível e limitada de capacidade.
+The term *cell* is synonymous with *deployment stamp*: a complete, repeatable unit with bounded capacity.
 
 ```text
                          Control Plane
@@ -36,14 +36,14 @@ O termo *célula* é usado como sinônimo de *deployment stamp*: uma unidade com
    +-------------------+            +-------------------+
 ```
 
-O control plane não participa do processamento interno de uma rota. Ele apenas resolve a célula proprietária da frota, acompanha capacidade e coordena lifecycle. Depois do roteamento, toda operação crítica permanece dentro da célula.
+The control plane does not participate in route processing. It resolves the cell that owns a fleet, tracks capacity, and coordinates cell lifecycle. After routing, every critical operation remains inside the selected cell.
 
-No código, `CellId` será um valor obrigatório no contexto de mensagem. No Azure, cada célula receberá resource group e namespace do Service Bus próprios. No Terraform, uma única definição de módulo produzirá todas as células para reduzir divergência.
+In code, `CellId` is required message context. In Azure, each cell receives its own resource group and Service Bus namespace. A single Terraform module definition produces every cell to minimize configuration drift.
 
-## Contexto
+## System context
 
 ```text
-Caminhão / Simulador
+Truck / Simulator
         |
         v
 Telemetry API (Spring Boot)
@@ -60,41 +60,41 @@ Route Planning Worker (Spring Boot)
         +----------------> Spring AI / Azure OpenAI
                               |
                               v
-                    Recomendação estruturada
+                    Structured Recommendation
                               |
                               v
-                       Aprovação humana
+                        Human Approval
 ```
 
-## Eventos iniciais
+## Initial events
 
-| Evento | Emissor | Consumidor | Finalidade |
+| Event | Producer | Consumer | Purpose |
 |---|---|---|---|
-| `TelemetryReceived` | Telemetry API | Risk Detector | Registrar uma leitura normalizada |
-| `RouteRiskDetected` | Risk Detector | Route Planning Worker | Solicitar análise de risco |
-| `ReplanningRequested` | Route Planning Worker | Route Engine | Calcular alternativas determinísticas |
-| `RouteProposed` | Fleet Routing Platform | Operations API | Apresentar recomendação ao operador |
-| `RouteApproved` | Operations API | Dispatch Adapter | Autorizar mudança operacional |
+| `TelemetryReceived` | Telemetry API | Risk Detector | Record a normalized telemetry reading |
+| `RouteRiskDetected` | Risk Detector | Route Planning Worker | Request route risk analysis |
+| `ReplanningRequested` | Route Planning Worker | Route Engine | Calculate deterministic alternatives |
+| `RouteProposed` | Fleet Routing Platform | Operations API | Present a recommendation to the operator |
+| `RouteApproved` | Operations API | Dispatch Adapter | Authorize an operational route change |
 
 ## Service Bus
 
-O baseline usa:
+The baseline uses:
 
-- tópico `logistics-events`, com detecção de duplicidade;
-- assinatura `route-planning`, com `PeekLock`, tentativas limitadas e DLQ;
-- fila `route-replanning-commands`, reservada para comandos direcionados;
-- `MessageId` derivado do identificador do processo de negócio;
-- consumidores idempotentes, porque `PeekLock` oferece entrega *at least once*.
+- a `logistics-events` topic with duplicate detection;
+- a `route-planning` subscription with PeekLock, bounded delivery attempts, and a DLQ;
+- a `route-replanning-commands` queue for targeted commands;
+- a `MessageId` derived from the business process identifier;
+- idempotent consumers because PeekLock provides *at-least-once* delivery.
 
-## Fontes oficiais
+## Official sources
 
-- [Azure Deployment Stamps — células como unidades independentes](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp)
-- [Azure Service Bus — isolamento multitenant](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/service/service-bus)
-- [Azure Well-Architected Framework — Service Bus](https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-service-bus)
-- [Como evitar perda e duplicação de mensagens](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates)
-- [Queues, topics e subscriptions](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-queues-topics-subscriptions)
+- [Azure Deployment Stamps as independent cells](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp)
+- [Azure Service Bus isolation in multitenant systems](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/service/service-bus)
+- [Azure Well-Architected Framework for Service Bus](https://learn.microsoft.com/en-us/azure/well-architected/service-guides/azure-service-bus)
+- [Prevent message loss and duplicate processing](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates)
+- [Queues, topics, and subscriptions](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-queues-topics-subscriptions)
 - [Dead-letter queues](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-dead-letter-queues)
-- [Azure Maps — rotas para caminhões](https://learn.microsoft.com/en-us/rest/api/maps/route/post-route-directions?view=rest-maps-2025-01-01)
-- [Spring AI — tool calling](https://docs.spring.io/spring-ai/reference/api/tools.html)
-- [OpenAI Docs — Microsoft Azure OpenAI](https://developers.openai.com/api/reference/ruby#microsoft-azure-openai)
-- [Terraform Provider AzureRM — Service Bus](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/servicebus_namespace)
+- [Azure Maps truck routing](https://learn.microsoft.com/en-us/rest/api/maps/route/post-route-directions?view=rest-maps-2025-01-01)
+- [Spring AI tool calling](https://docs.spring.io/spring-ai/reference/api/tools.html)
+- [OpenAI Docs for Microsoft Azure OpenAI](https://developers.openai.com/api/reference/ruby#microsoft-azure-openai)
+- [AzureRM Terraform Provider for Service Bus](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/servicebus_namespace)

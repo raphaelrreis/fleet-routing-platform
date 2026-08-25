@@ -1,66 +1,66 @@
-# Spring Boot + IA no Azure: um copiloto logístico para replanejar rotas com telemetria
+# Spring Boot and AI on Azure: Building a Telemetry-Driven Fleet Routing Platform
 
-> Draft em evolução. Cada seção só será considerada pronta quando o comportamento correspondente existir no repositório e estiver coberto por teste.
+> Work in progress. A section is considered complete only after the corresponding behavior exists in the repository and is covered by automated tests.
 
-## Introdução
+## Introduction
 
-Um caminhão refrigerado está a caminho de uma entrega urgente. A temperatura da carga começa a subir, o combustível está abaixo do esperado e o trânsito indica que o prazo não será cumprido.
+A refrigerated truck is carrying a time-sensitive shipment. The cargo temperature begins to rise, fuel is below the expected level, and traffic data indicates that the delivery window will be missed.
 
-Qual caminhão deveria assumir o frete? Qual rota respeita as dimensões do veículo e as restrições da carga? E como explicar essa recomendação ao operador sem entregar uma decisão crítica a um modelo generativo?
+Which truck should take over the shipment? Which route respects the vehicle dimensions and cargo restrictions? How can the platform explain its recommendation without delegating a critical decision to a generative model?
 
-Esse é o problema que escolhi para explorar Spring Boot, Spring AI e Azure de uma forma menos previsível que o tradicional chatbot.
+This is the problem I chose to explore with Spring Boot, Spring AI, and Azure instead of building another generic chatbot.
 
-A proposta não é pedir para um LLM “inventar a melhor rota”. O modelo atuará como copiloto: interpretará o incidente, consultará ferramentas tipadas e explicará uma alternativa produzida por componentes determinísticos.
+The goal is not to ask an LLM to "invent the best route." The model interprets the incident, invokes typed tools, and explains an alternative calculated by deterministic components.
 
-## A primeira decisão: separar telemetria de workflow
+## The first decision: separate telemetry from workflow messaging
 
-Nem toda mensagem é igual.
+Not every message has the same operational requirements.
 
-Localização, velocidade e temperatura podem produzir milhares de sinais contínuos. Já eventos como `RouteRiskDetected` e `RouteProposed` representam mudanças importantes no processo de negócio e precisam de entrega confiável, retentativa e dead-letter queue.
+Location, speed, and temperature can generate thousands of continuous signals. Events such as `RouteRiskDetected` and `RouteProposed`, however, represent meaningful business state changes that require reliable delivery, retries, and a dead-letter queue.
 
-Por isso, o projeto usa Azure Service Bus como backbone dos workflows. A ingestão massiva de telemetria será evoluída depois com IoT Hub/Event Hubs.
+For that reason, Azure Service Bus is the workflow messaging backbone. A later phase will introduce IoT Hub and Event Hubs for high-volume telemetry ingestion.
 
-## A arquitetura inicial
+## Initial architecture
 
-<!-- Inserir diagrama depois que os primeiros adaptadores estiverem implementados. -->
+<!-- Add the architecture diagram after the first Azure adapters are implemented. -->
 
-O fluxo inicial será:
+The initial flow is:
 
-1. uma API Spring Boot recebe telemetria simulada;
-2. regras determinísticas identificam risco para a entrega;
-3. um evento `RouteRiskDetected` é publicado no Service Bus;
-4. o worker consulta frota, restrições do frete e motor de rotas;
-5. Spring AI usa essas informações para produzir uma recomendação estruturada;
-6. um operador humano aprova ou rejeita a mudança.
+1. A Spring Boot API receives simulated telemetry.
+2. Deterministic rules identify shipment risk.
+3. The application publishes a `RouteRiskDetected` event to Service Bus.
+4. A worker queries fleet availability, shipment constraints, and the route engine.
+5. Spring AI uses those facts to produce a structured recommendation.
+6. A human operator approves or rejects the proposed change.
 
-## Por que uma arquitetura celular
+## Why cell-based architecture
 
-Uma única instância global do sistema seria mais simples, mas também concentraria o risco. Uma implantação defeituosa, um consumidor travado ou uma frota produzindo volume anormal poderia afetar todas as operações.
+A single global deployment would be simpler, but it would also concentrate risk. A defective release, a stalled consumer, or one fleet producing abnormal volume could affect every operation.
 
-Por isso, a arquitetura será dividida em células. No Azure esse desenho corresponde ao padrão Deployment Stamps: cópias independentes e repetíveis do workload, cada uma atendendo um subconjunto de clientes ou frotas.
+The architecture is therefore divided into cells. On Azure, this design maps to the Deployment Stamps pattern: independent, repeatable workload copies that each serve a subset of customers or fleets.
 
-Cada célula possui compute, namespace do Service Bus, dados operacionais, identidade e limites próprios. O control plane conhece o mapeamento `fleetId -> cellId`, mas não participa do processamento de uma rota.
+Each cell owns its compute, Service Bus namespace, operational data, identity, and capacity limits. The control plane stores the `fleetId -> cellId` mapping but does not participate in route processing.
 
-Essa separação produz três propriedades importantes:
+This separation creates three important properties:
 
-1. uma falha fica contida na célula afetada;
-2. a capacidade cresce com a criação de novas células;
-3. atualizações podem avançar gradualmente, começando por uma célula canário.
+1. A failure remains contained within the affected cell.
+2. Capacity grows by adding cells with known limits.
+3. Releases can progress gradually, starting with a canary cell.
 
-O custo é real: infraestrutura duplicada, roteamento adicional e observabilidade agregada. Arquitetura celular não é uma otimização gratuita; é uma escolha deliberada para reduzir o raio de impacto.
+The tradeoff is real: duplicated infrastructure, additional routing, and aggregated observability. Cell-based architecture is not a free optimization. It is a deliberate decision to reduce blast radius.
 
-Fonte: [Microsoft — Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp).
+Source: [Microsoft Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp).
 
-## Por que Service Bus
+## Why Service Bus
 
-O Service Bus oferece filas, tópicos, assinaturas, sessões, detecção de duplicidade e DLQ. Entretanto, isso não transforma automaticamente o consumidor em “exactly once”. No modo `PeekLock`, uma mensagem pode ser entregue novamente se o processamento terminar antes da confirmação.
+Service Bus provides queues, topics, subscriptions, sessions, duplicate detection, and DLQs. These features do not automatically make a consumer "exactly once." In PeekLock mode, a message may be delivered again if processing finishes before the receiver settles it.
 
-Por esse motivo, o desenho combina `MessageId` de negócio, detecção de duplicidade no broker e consumidores idempotentes.
+The design therefore combines a business-derived `MessageId`, broker duplicate detection, and idempotent consumers.
 
-Fonte: [Microsoft — evitar perda e duplicação de mensagens](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates).
+Source: [Microsoft guidance for preventing message loss and duplicate processing](https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-message-loss-and-duplicates).
 
-## Infraestrutura também é parte do artigo
+## Infrastructure is part of the product
 
-Não quero que a infraestrutura seja uma lista de cliques no portal. Namespace, tópico, assinatura, fila, observabilidade e identidades serão definidos com Terraform e revisados no mesmo fluxo do código Java.
+Infrastructure should not be a sequence of manual portal clicks. Namespaces, topics, subscriptions, queues, observability, and identities are defined in Terraform and reviewed through the same workflow as the Java code.
 
-<!-- Próxima seção: primeiro evento de domínio e teste de detecção de risco. -->
+<!-- Next section: the first domain event and route risk detection test. -->

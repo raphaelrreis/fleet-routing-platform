@@ -1,49 +1,48 @@
-# ADR 0004 — Arquitetura celular com Azure Deployment Stamps
+# ADR 0004 - Cell-Based Architecture with Azure Deployment Stamps
 
-- Status: aceito
-- Data: 2026-08-24
+- Status: Accepted
+- Date: 2026-08-24
 
-## Contexto
+## Context
 
-Uma única pilha global de aplicação, mensageria e dados aumenta o raio de impacto de falhas, implantações defeituosas e consumo excessivo por uma frota. O sistema também precisa crescer por unidades previsíveis de capacidade e permitir isolamento regional.
+A single global application, messaging, and data stack increases the blast radius of failures, defective deployments, and excessive workload from one fleet. The system must also scale through predictable capacity units and support regional isolation.
 
-O Azure Architecture Center chama cada cópia independente de uma unidade de implantação de *stamp*, *scale unit* ou *cell*.
+The Azure Architecture Center describes each independent deployment unit as a *stamp*, *scale unit*, or *cell*.
 
-## Decisão
+## Decision
 
-Adotaremos uma arquitetura celular baseada no padrão Azure Deployment Stamps.
+The platform will use a cell-based architecture implemented through the Azure Deployment Stamps pattern.
 
-Cada célula terá, no mínimo:
+At a minimum, each cell contains:
 
-- compute do Fleet Routing Platform e do Route Planning Worker;
-- namespace próprio do Azure Service Bus;
-- tópicos, assinaturas, filas e DLQs próprios;
-- armazenamento operacional particionado pela célula;
-- identidade gerenciada, RBAC, métricas e limites de capacidade próprios.
+- Fleet Routing Platform and Route Planning Worker compute;
+- a dedicated Azure Service Bus namespace;
+- dedicated topics, subscriptions, queues, and DLQs;
+- operational storage partitioned by cell;
+- dedicated managed identity, RBAC, metrics, and capacity limits.
 
-Uma frota pertence a exatamente uma célula por vez. O control plane mantém o mapeamento `fleetId -> cellId`, capacidade e estado de cada célula. Mensagens carregam `cellId`, `fleetId` e um `MessageId` de negócio.
+A fleet belongs to exactly one cell at a time. The control plane stores the `fleetId -> cellId` assignment together with each cell's capacity and status. Messages carry `cellId`, `fleetId`, and a business-derived `MessageId`.
 
-O MVP começa com duas células declaradas pelo mesmo módulo Terraform. Essa duplicação evita pressupostos ocultos de instância única antes de existirem usuários reais.
+The MVP starts with two cells produced by the same Terraform module. This duplication exposes hidden single-instance assumptions before real users depend on the platform.
 
-## Limites
+## Boundaries
 
-- nenhuma chamada síncrona entre células no caminho crítico;
-- nenhuma fila ou base operacional global compartilhada entre células;
-- falha de uma célula não pode interromper a ingestão ou o planejamento das outras;
-- analytics pode agregar eventos de todas as células fora do caminho transacional;
-- movimentar uma frota entre células é um workflow explícito e auditável.
+- No synchronous cross-cell calls exist in the critical path.
+- Cells do not share a global operational queue or database.
+- A cell failure must not interrupt ingestion or route planning in other cells.
+- Analytics may aggregate events from all cells outside the transactional path.
+- Moving a fleet between cells is an explicit, auditable workflow.
 
-## Consequências
+## Consequences
 
-- menor raio de impacto e rollout progressivo por célula;
-- escala horizontal por adição de células com capacidade conhecida;
-- custo e complexidade operacional maiores;
-- necessidade de control plane, roteamento e observabilidade agregada;
-- Terraform precisa produzir células idênticas e impedir configuration drift.
+- Failures have a smaller blast radius, and releases can roll out progressively by cell.
+- Horizontal scale comes from adding cells with known capacity.
+- Infrastructure cost and operational complexity increase.
+- The platform requires a control plane, request routing, and aggregated observability.
+- Terraform must produce identical cells and prevent configuration drift.
 
-## Fontes
+## Sources
 
-- [Azure Architecture Center — Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp)
-- [Azure Service Bus em soluções multitenant](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/service/service-bus)
-- [AWS Well-Architected — benefícios de cell-based architecture](https://docs.aws.amazon.com/wellarchitected/latest/reducing-scope-of-impact-with-cell-based-architecture/why-to-use-a-cell-based-architecture.html)
-
+- [Azure Architecture Center Deployment Stamps pattern](https://learn.microsoft.com/en-us/azure/architecture/patterns/deployment-stamp)
+- [Azure Service Bus in multitenant solutions](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/service/service-bus)
+- [AWS Well-Architected benefits of cell-based architecture](https://docs.aws.amazon.com/wellarchitected/latest/reducing-scope-of-impact-with-cell-based-architecture/why-to-use-a-cell-based-architecture.html)

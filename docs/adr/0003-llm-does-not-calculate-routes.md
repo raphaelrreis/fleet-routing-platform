@@ -1,22 +1,21 @@
-# ADR 0003 — O LLM não calcula rotas
+# ADR 0003 - The LLM Does Not Calculate Routes
 
-- Status: aceito
-- Data: 2026-08-24
+- Status: Accepted
+- Date: 2026-08-24
 
-## Contexto
+## Context
 
-Modelos generativos são bons em interpretação e explicação, mas não fornecem garantia matemática ou geográfica para distâncias, restrições viárias e alocação ótima de veículos.
+Generative models are effective at interpretation and explanation, but they do not provide mathematical or geographic guarantees for distance, road constraints, or optimal vehicle assignment.
 
-## Decisão
+## Decision
 
-Spring AI disponibilizará ferramentas tipadas para consultar frota, frete, telemetria e Azure Maps. O LLM poderá escolher e combinar essas ferramentas, mas não poderá inventar coordenadas, custos ou rotas.
+Spring AI will expose typed tools for querying fleet data, shipments, telemetry, and Azure Maps. The LLM may select and combine these tools, but it must not invent coordinates, costs, or routes.
 
-A recomendação final será um objeto estruturado validado pela aplicação e exigirá aprovação humana no MVP.
+The application validates the final structured recommendation, and the MVP requires human approval before execution.
 
-## Consequências
+## Consequences
 
-- resultados geográficos permanecem auditáveis e reproduzíveis;
-- tool calling terá limites e ferramentas destrutivas não serão registradas como defaults;
-- a aplicação, e não o modelo, controla autenticação, autorização e efeitos colaterais;
-- prompts e respostas serão dados de apoio, nunca a única evidência da decisão.
-
+- Geographic results remain auditable and reproducible.
+- Tool calling has explicit limits, and destructive tools are never registered as defaults.
+- The application, not the model, controls authentication, authorization, and side effects.
+- Prompts and responses provide supporting context but are never the sole evidence behind a decision.

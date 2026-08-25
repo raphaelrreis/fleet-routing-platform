@@ -1,37 +1,37 @@
 # Fleet Routing Platform
 
-Projeto de referência para explorar Spring Boot, Spring AI e serviços Azure em um cenário de transporte e logística orientado a eventos.
+A reference implementation for exploring Spring Boot, Spring AI, and Azure services in an event-driven transportation and logistics system.
 
-O objetivo é construir, em pequenas entregas, um copiloto operacional que interpreta telemetria, consulta serviços determinísticos de roteamento e propõe ações explicáveis para um operador humano.
+The platform incrementally processes vehicle telemetry, queries deterministic routing services, and produces explainable recommendations for a human operator.
 
-## Estado atual
+## Project status
 
-- [x] Bootstrap do projeto
-- [x] Decisões de arquitetura e baseline Terraform do Service Bus
-- [x] Domínio de frota, frete e telemetria
-- [x] Detecção de risco de rota
-- [ ] Orquestração assíncrona
-- [ ] Integração com Azure Maps
-- [ ] Integração com Spring AI e Azure OpenAI
-- [ ] Observabilidade e resiliência
+- [x] Project bootstrap
+- [x] Architecture decisions and Service Bus Terraform baseline
+- [x] Fleet, shipment, and telemetry domain model
+- [x] Route risk detection
+- [ ] Asynchronous orchestration
+- [ ] Azure Maps integration
+- [ ] Spring AI and Azure OpenAI integration
+- [ ] Observability and resilience
 
-## Executar
+## Running locally
 
-### Toolchain suportada
+### Supported toolchain
 
-- Java 25 LTS (`25.0.4-tem` no SDKMAN)
+- Java 25 LTS (`25.0.4-tem` through SDKMAN)
 - Maven 3.9.16
 - Spring Boot 4.1.1
-- Spring Framework 7.0.9, gerenciado pelo Spring Boot
+- Spring Framework 7.0.9, managed by Spring Boot
 - Spring AI 2.0.1
 
-Ative as versões fixadas pelo projeto:
+Activate the project-pinned versions:
 
 ```bash
 sdk env
 ```
 
-O Maven Enforcer interrompe o build quando ele é executado fora da família Java 25 ou com Maven anterior ao 3.9.16.
+Maven Enforcer fails the build when it runs outside the Java 25 release family or with a Maven version earlier than 3.9.16.
 
 ```bash
 mvn spring-boot:run
@@ -43,9 +43,9 @@ Health check:
 curl http://localhost:8080/actuator/health
 ```
 
-## Documentação
+## Documentation
 
-- [Arquitetura](docs/architecture.md)
+- [Architecture](docs/architecture.md)
 - [ADRs](docs/adr)
-- [Draft do artigo para LinkedIn](docs/linkedin-article-draft.md)
-- [Infraestrutura Terraform](infra/terraform)
+- [LinkedIn article draft](docs/linkedin-article-draft.md)
+- [Terraform infrastructure](infra/terraform)
