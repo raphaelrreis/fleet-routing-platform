@@ -121,5 +121,4 @@ curl http://localhost:8080/api/v1/route-risk-assessments/{assessmentId}
 - [AI-assisted incident recommendation](docs/ai-incident-recommendation.md)
 - [AWS and GCP migration to Azure](docs/cloud-migration.md)
 - [ADRs](docs/adr)
-- [LinkedIn article draft](docs/linkedin-article-draft.md)
 - [Terraform infrastructure](infra/terraform)

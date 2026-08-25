@@ -71,5 +71,4 @@ Os comandos completos para criar e consultar uma avaliação estão no [README e
 - [Recomendação de incidente assistida por IA](docs/ai-incident-recommendation.md)
 - [Migração de AWS e GCP para Azure](docs/cloud-migration.md)
 - [ADRs](docs/adr)
-- [Rascunho do artigo no LinkedIn](docs/linkedin-article-draft.pt-BR.md)
 - [Infraestrutura Terraform](infra/terraform)
