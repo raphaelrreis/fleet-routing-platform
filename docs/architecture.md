@@ -40,10 +40,31 @@ The control plane does not participate in route processing. It resolves the cell
 
 In code, `CellId` is required message context. In Azure, each cell receives its own resource group and Service Bus namespace. A single Terraform module definition produces every cell to minimize configuration drift.
 
+## Migration topology
+
+AWS and GCP are temporary source environments during the client's migration. Azure hosts the target cells and becomes the steady-state platform.
+
+```text
+AWS Source -----------+
+  ECS / EKS           |
+  SQS / SNS / MSK     |     Discovery, replication, and cutover
+  RDS / S3            +------------------------------------------+
+                                                                  |
+GCP Source -----------+                                          v
+  Cloud Run / GKE                                      Azure Target Platform
+  Pub/Sub                                                Control Plane
+  Cloud SQL / Storage                                   Cell brs-01
+                                                        Cell eus2-01
+```
+
+The source-cloud providers are read-only. They support inventory and migration verification but do not create AWS or GCP resources. New application capabilities are built in Azure, and cross-cloud dependencies are removed after stabilization.
+
+See [AWS and GCP Migration to Azure](cloud-migration.md) for service mapping, migration phases, and acceptance criteria.
+
 ## System context
 
 ```text
-Truck / Simulator
+Telematics Device / Gateway
         |
         v
 Telemetry API (Spring Boot)
@@ -98,3 +119,5 @@ The baseline uses:
 - [Spring AI tool calling](https://docs.spring.io/spring-ai/reference/api/tools.html)
 - [OpenAI Docs for Microsoft Azure OpenAI](https://developers.openai.com/api/reference/ruby#microsoft-azure-openai)
 - [AzureRM Terraform Provider for Service Bus](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/servicebus_namespace)
+- [Microsoft Azure Migration Hub](https://learn.microsoft.com/en-us/azure/migration/)
+- [Cross-region and multicloud connectivity](https://learn.microsoft.com/en-us/azure/networking/design-guide/cross-region)

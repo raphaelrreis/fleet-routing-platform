@@ -6,13 +6,17 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "5.0.1"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.57.1"
+    }
+    google = {
+      source  = "hashicorp/google"
+      version = "7.45.0"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.7"
     }
   }
-}
-
-provider "azurerm" {
-  features {}
 }

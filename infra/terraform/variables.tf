@@ -4,6 +4,18 @@ variable "control_plane_location" {
   default     = "brazilsouth"
 }
 
+variable "aws_source_region" {
+  description = "Primary AWS region inspected during migration discovery."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "gcp_source_region" {
+  description = "Primary GCP region inspected during migration discovery."
+  type        = string
+  default     = "us-central1"
+}
+
 variable "environment" {
   description = "Deployment environment name."
   type        = string

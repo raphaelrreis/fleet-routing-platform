@@ -1,5 +1,7 @@
 environment            = "dev"
 control_plane_location = "brazilsouth"
+aws_source_region      = "us-east-1"
+gcp_source_region      = "us-central1"
 
 cells = {
   brs-01 = {
