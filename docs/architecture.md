@@ -26,7 +26,7 @@ The term *cell* is synonymous with *deployment stamp*: a complete, repeatable un
               +---------------+---------------+
               |                               |
               v                               v
-        Cell brs-01                      Cell eus-01
+        Cell brs-01                     Cell eus2-01
    +-------------------+            +-------------------+
    | Spring Boot APIs  |            | Spring Boot APIs  |
    | Service Bus       |            | Service Bus       |

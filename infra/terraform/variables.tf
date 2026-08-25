@@ -1,8 +1,3 @@
-variable "subscription_id" {
-  description = "Azure subscription that receives the development resources."
-  type        = string
-}
-
 variable "control_plane_location" {
   description = "Azure region for shared control-plane observability resources."
   type        = string
@@ -32,7 +27,7 @@ variable "cells" {
       location        = "brazilsouth"
       service_bus_sku = "Standard"
     }
-    eus-01 = {
+    eus2-01 = {
       location        = "eastus2"
       service_bus_sku = "Standard"
     }

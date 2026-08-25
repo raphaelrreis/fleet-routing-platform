@@ -3,7 +3,7 @@
 This directory provisions the initial cell-based infrastructure baseline:
 
 - a shared resource group and Log Analytics workspace used only for aggregated observability;
-- two independent cells by default: `brs-01` and `eus-01`;
+- two independent cells by default: `brs-01` and `eus2-01`;
 - a dedicated resource group and Azure Service Bus namespace for each cell;
 - a `logistics-events` topic, `route-planning` subscription, and DLQ in each cell;
 - a `route-replanning-commands` queue in each cell;
@@ -24,13 +24,13 @@ terraform validate
 ## Planning a deployment
 
 ```bash
-cp terraform.tfvars.example terraform.tfvars
 az login
+export ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
 terraform init
-terraform plan
+terraform plan -var-file=environments/dev.tfvars
 ```
 
-Do not commit the real `terraform.tfvars` file. A remote state backend and deployment pipeline will be added before the first shared deployment.
+Subscription and tenant identifiers come from Azure CLI authentication and environment variables; they are never committed. The repository contains environment-specific, non-secret workload settings under `environments/`. A remote state backend and deployment pipeline will be added before the first shared deployment.
 
 ## Decisions
 
@@ -39,4 +39,4 @@ Do not commit the real `terraform.tfvars` file. A remote state backend and deplo
 - `local_auth_enabled = false`: workloads must use Microsoft Entra ID and Managed Identity.
 - Broker duplicate detection does not replace consumer idempotency.
 - At least two cells are required to expose single-instance assumptions during development.
-- The Azure Verified Service Bus module is still on a zero-major release. This baseline uses explicit resources to keep the learning path and execution plan transparent.
+- The Azure Verified Service Bus module is still on a zero-major release. This baseline uses explicit resources to keep the topology auditable and provider behavior visible.
