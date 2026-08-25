@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:fleet-routing-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+  kafka:
+    bootstrap-servers: localhost:19092
+
+fleet-routing:
+  outbox:
+    dispatch-delay: 3600000
+  ai:
+    enabled: false

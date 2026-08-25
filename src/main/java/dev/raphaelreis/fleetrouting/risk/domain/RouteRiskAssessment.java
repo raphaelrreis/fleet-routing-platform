@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public record RouteRiskAssessment(
+        UUID assessmentId,
         CellId cellId,
         UUID freightId,
         UUID truckId,
@@ -17,6 +18,7 @@ public record RouteRiskAssessment(
 ) {
 
     public RouteRiskAssessment {
+        Objects.requireNonNull(assessmentId, "assessmentId must not be null");
         Objects.requireNonNull(cellId, "cellId must not be null");
         Objects.requireNonNull(freightId, "freightId must not be null");
         Objects.requireNonNull(truckId, "truckId must not be null");

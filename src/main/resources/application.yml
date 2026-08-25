@@ -1,6 +1,43 @@
 spring:
   application:
     name: fleet-routing-platform
+  ai:
+    model:
+      chat: none
+      audio:
+        speech: none
+        transcription: none
+      embedding: none
+      image: none
+      moderation: none
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/fleet_routing}
+    username: ${DATABASE_USER:fleet_routing}
+    password: ${DATABASE_PASSWORD:fleet_routing}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  sql:
+    init:
+      mode: always
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+fleet-routing:
+  outbox:
+    dispatch-delay: 1000
+    retry:
+      max-attempts: 5
+      initial-delay: 1s
+      multiplier: 2.0
+      max-delay: 1m
+
+  ai:
+    enabled: ${AI_RECOMMENDATIONS_ENABLED:false}
 
 management:
   endpoints:
@@ -11,4 +48,3 @@ management:
     health:
       probes:
         enabled: true
-

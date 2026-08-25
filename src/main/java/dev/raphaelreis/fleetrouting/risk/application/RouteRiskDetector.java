@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
 import java.util.Objects;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class RouteRiskDetector {
@@ -42,6 +43,7 @@ public class RouteRiskDetector {
         }
 
         return new RouteRiskAssessment(
+                assessmentId(cellId, freight, telemetry),
                 cellId,
                 freight.id(),
                 telemetry.truckId(),
@@ -49,6 +51,11 @@ public class RouteRiskDetector {
                 severityFor(freight, reasons),
                 reasons
         );
+    }
+
+    private static java.util.UUID assessmentId(CellId cellId, Freight freight, TelemetryReading telemetry) {
+        var key = "%s:%s:%s".formatted(cellId, freight.id(), telemetry.recordedAt());
+        return java.util.UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8));
     }
 
     private static void ensureTelemetryBelongsToAssignedTruck(Freight freight, TelemetryReading telemetry) {
